@@ -72,7 +72,7 @@ func (c *Change) Files() []*ChangeFile {
 				Name:   changes.To.Name,
 				Action: action,
 			}
-		case merkletrie.Delete | merkletrie.Modify:
+		case merkletrie.Delete, merkletrie.Modify:
 			files[i] = &ChangeFile{
 				Name:   changes.From.Name,
 				Action: action,
