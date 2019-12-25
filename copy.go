@@ -1,20 +1,27 @@
 package extract
 
 import (
+	"github.com/HarryCU/git-extract/collect"
+	"gopkg.in/src-d/go-git.v4/utils/merkletrie"
 	"io"
 	"os"
 	"path"
 )
 
-func (c Changes) Copy(sourceDir, targetDir string) bool {
+func (c Changes) Copy(sourceDir, targetDir string, collector *collect.Collector) {
 	if !exists(targetDir) {
-		return false
+		return
 	}
 
 	actions := c.Actions()
 	for _, action := range actions {
 		for _, file := range action.Files {
 			srcFile := path.Join(sourceDir, file)
+
+			if action.Key == merkletrie.Delete || !exists(srcFile) {
+				collector.Append(action.Key, file)
+			}
+
 			destFile := path.Join(targetDir, action.Key.String(), file)
 			if !exists(srcFile) || exists(destFile) {
 				continue
@@ -27,7 +34,6 @@ func (c Changes) Copy(sourceDir, targetDir string) bool {
 			CheckIfError(err)
 		}
 	}
-	return true
 }
 
 func exists(name string) bool {
