@@ -14,6 +14,7 @@ type HashOptions struct {
 
 type ConfigOptions struct {
 	TargetDir string
+	Debug     bool
 	Hash      *HashOptions
 }
 
@@ -21,9 +22,11 @@ var Config *ConfigOptions
 
 func init() {
 	var from, to, targetDir string
+	var debug bool
 	flag.StringVar(&from, "from", "", "git log begin hash")
 	flag.StringVar(&to, "to", "", "git log end hash")
 	flag.StringVar(&targetDir, "out", getExecutePath(), "git change output dir")
+	flag.BoolVar(&debug, "debug", true, "open debug log")
 	flag.Parse()
 
 	var fromHash plumbing.Hash
@@ -38,6 +41,7 @@ func init() {
 
 	Config = &ConfigOptions{
 		TargetDir: targetDir,
+		Debug:     debug,
 		Hash: &HashOptions{
 			From: fromHash,
 			To:   toHash,

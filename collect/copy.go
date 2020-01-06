@@ -1,19 +1,23 @@
-package extract
+package collect
 
 import (
-	"github.com/HarryCU/git-extract/collect"
+	"github.com/HarryCU/git-extract"
 	"gopkg.in/src-d/go-git.v4/utils/merkletrie"
 	"io"
 	"os"
 	"path"
 )
 
-func (c Changes) Copy(sourceDir, targetDir string, collector *collect.Collector) {
-	if !exists(targetDir) {
-		return
-	}
+func (c *Collector) CopyTo(sourceDir string, targetDir string) {
+	actions := c.actionCollector.Build()
+	copyActions(c, actions, sourceDir, targetDir)
+}
 
-	actions := c.Actions()
+func copyActions(collector *Collector, actions []*Action, sourceDir, targetDir string) {
+	if !exists(targetDir) {
+		err := os.MkdirAll(targetDir, os.ModeDir)
+		extract.CheckIfError(err)
+	}
 	for _, action := range actions {
 		for _, file := range action.Files {
 			srcFile := path.Join(sourceDir, file)
@@ -28,10 +32,10 @@ func (c Changes) Copy(sourceDir, targetDir string, collector *collect.Collector)
 			}
 
 			err := os.MkdirAll(path.Dir(destFile), os.ModeDir)
-			CheckIfError(err)
+			extract.CheckIfError(err)
 
 			err = copyFile(srcFile, destFile)
-			CheckIfError(err)
+			extract.CheckIfError(err)
 		}
 	}
 }

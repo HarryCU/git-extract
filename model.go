@@ -2,6 +2,7 @@ package extract
 
 import (
 	"fmt"
+	"github.com/HarryCU/git-extract/filter"
 	"gopkg.in/src-d/go-git.v4/plumbing"
 	"gopkg.in/src-d/go-git.v4/plumbing/object"
 	"gopkg.in/src-d/go-git.v4/utils/merkletrie"
@@ -15,17 +16,12 @@ type Change struct {
 	c object.Changes
 }
 
-type Action struct {
-	Key   merkletrie.Action
-	Files []string
-}
-
 type ChangeFile struct {
 	Name   string
 	Action merkletrie.Action
 }
 
-func New(c *object.Commit) Changes {
+func New(c *object.Commit, chain *filter.Chain) Changes {
 	b, err := c.Tree()
 	CheckIfError(err)
 	changes := make(Changes, c.NumParents())
@@ -40,12 +36,15 @@ func New(c *object.Commit) Changes {
 		if len(diff) == 0 {
 			return nil
 		}
-
-		changes[idx] = &Change{
+		change := &Change{
 			a: ca.ID(),
 			b: c.ID(),
 			c: diff,
 		}
+		if chain != nil && !chain.Include(change) {
+			return nil
+		}
+		changes[idx] = change
 		idx++
 		return nil
 	})
@@ -82,50 +81,4 @@ func (c *Change) Files() []*ChangeFile {
 		}
 	}
 	return files
-}
-
-func (c Changes) Actions() []*Action {
-
-	actionMap := make(map[string]merkletrie.Action)
-	actionCounter := make(map[merkletrie.Action]int)
-	for _, change := range c {
-		files := change.Files()
-		for _, file := range files {
-			action, ok := actionMap[file.Name]
-			if !ok {
-				actionMap[file.Name] = file.Action
-				// 计数
-				actionCounter[file.Action] = actionCounter[file.Action] + 1
-			} else {
-				// 在查找区间，发现其文件有Insert状态，就代表新增文件
-				if file.Action == merkletrie.Insert {
-					actionMap[file.Name] = merkletrie.Insert
-					// 重新计数
-					actionCounter[action] = actionCounter[action] - 1
-					actionCounter[file.Action] = actionCounter[file.Action] + 1
-				}
-			}
-		}
-	}
-
-	result := make([]*Action, 3)
-	actionFileMap := make(map[merkletrie.Action]*Action)
-	idx := 0
-	for action, count := range actionCounter {
-		actionFile := &Action{
-			Key:   action,
-			Files: make([]string, count),
-		}
-		actionCounter[action] = 0
-		result[idx] = actionFile
-		actionFileMap[action] = actionFile
-		idx++
-	}
-
-	for file, action := range actionMap {
-		actionFileMap[action].Files[actionCounter[action]] = file
-		actionCounter[action] = actionCounter[action] + 1
-	}
-
-	return result[0:idx]
 }

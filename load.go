@@ -1,12 +1,13 @@
 package extract
 
 import (
+	"github.com/HarryCU/git-extract/filter"
 	"gopkg.in/src-d/go-git.v4"
 	"gopkg.in/src-d/go-git.v4/plumbing/object"
 	"gopkg.in/src-d/go-git.v4/plumbing/storer"
 )
 
-func Load(path string) map[*object.Commit]Changes {
+func Load(path string, chain *filter.Chain) map[*object.Commit]Changes {
 
 	r, err := git.PlainOpen(path)
 	CheckIfError(err)
@@ -31,7 +32,7 @@ func Load(path string) map[*object.Commit]Changes {
 		if !to.IsZero() && c.Hash == to {
 			return storer.ErrStop
 		}
-		changeMap[c] = New(c)
+		changeMap[c] = New(c, chain)
 		return nil
 	})
 	CheckIfError(err)
