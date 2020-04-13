@@ -52,6 +52,14 @@ func New(c *object.Commit, chain *filter.Chain) Changes {
 	return changes[0:idx]
 }
 
+func NewSingle(ca, cb *object.Commit, diff object.Changes) *Change {
+	return &Change{
+		a: ca.ID(),
+		b: cb.ID(),
+		c: diff,
+	}
+}
+
 func (c *Change) A() string {
 	return c.a.String()
 }
